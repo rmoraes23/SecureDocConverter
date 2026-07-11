@@ -48,18 +48,32 @@ Conversores online de documentos exigem que você **faça upload dos seus arquiv
 
 ---
 
-## 🚀 Instalação
+## 🚀 Como Usar
 
-### Pré-requisitos
-- **Python 3.10+**
-- **Microsoft Word** (necessário para conversão WORD → PDF)
+### 💻 Para Usuários (Download Direto no Windows)
+Se você quer apenas usar o programa sem precisar instalar o Python ou configurar códigos:
 
-### Passos
+1. Acesse a seção de [**Releases**](https://github.com/rmoraes23/SecureDocConverter/releases) do repositório.
+2. Baixe o arquivo executável mais recente: `SecureDocConverter.exe`.
+3. Salve em qualquer pasta do seu computador e dê um **clique duplo** para abrir!
 
+> [!NOTE]
+> A conversão de **WORD ➔ PDF** requer que o Microsoft Word esteja instalado no seu Windows. Já a conversão de **PDF ➔ WORD** funciona de forma totalmente autônoma.
+
+---
+
+### 🛠️ Para Desenvolvedores (Rodando pelo Código-Fonte)
+Se você quer rodar o projeto localmente em ambiente de desenvolvimento:
+
+#### Pré-requisitos
+- Python 3.10+ instalado.
+- Microsoft Word instalado (necessário para docx2pdf).
+
+#### Passos
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/rmoraes23/WORD2PDF_CONVERTER.git
-cd WORD2PDF_CONVERTER
+git clone https://github.com/rmoraes23/SecureDocConverter.git
+cd SecureDocConverter
 
 # 2. Instale as dependências
 pip install -r requirements.txt
@@ -68,13 +82,12 @@ pip install -r requirements.txt
 python main.py
 ```
 
-### 📦 Criando o Executável (.exe)
-Se você deseja gerar um executável autônomo para Windows (sem necessidade de ter Python instalado para rodar):
-
+#### 📦 Criando seu próprio Executável (.exe)
+Para compilar o código fonte e gerar seu próprio executável do Windows:
 ```bash
 python build.py
 ```
-O executável `.exe` será gerado automaticamente dentro da pasta `dist/`.
+O arquivo `.exe` será gerado automaticamente dentro da pasta `dist/`.
 
 ---
 
