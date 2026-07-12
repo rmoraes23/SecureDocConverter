@@ -158,7 +158,7 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 **Raoni Moraes**
 
 - GitHub: [@rmoraes23](https://github.com/rmoraes23)
-- LinkedIn: [Raoni Moraes](https://linkedin.com/in/raonimoraes)
+- LinkedIn: [Raoni Moraes](https://www.linkedin.com/in/raonimoraes1/)
 
 ---
 
