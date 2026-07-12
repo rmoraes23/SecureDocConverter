@@ -42,9 +42,15 @@ Conversores online de documentos exigem que você **faça upload dos seus arquiv
 
 ---
 
-## 🖥️ Screenshots
+## 🖥️ Visual da Aplicação
 
-*Em breve*
+<div align="center">
+
+| Tema Escuro | Tema Claro |
+| :---: | :---: |
+| <img src="assets/screenshot_dark.png" width="420" alt="Tema Escuro"> | <img src="assets/screenshot_light.png" width="420" alt="Tema Claro"> |
+
+</div>
 
 ---
 
