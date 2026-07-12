@@ -55,7 +55,7 @@ COLORS = {
 }
 
 APP_NAME = "SecureDoc Converter"
-APP_VERSION = "3.0.0"
+APP_VERSION = "3.1.0"
 WINDOW_SIZE = "980x720"
 MIN_WIDTH = 900
 MIN_HEIGHT = 650
@@ -144,7 +144,6 @@ def add_watermark(
         
         if wm_type == "text" and text:
             c.setFillColor(HexColor(color))
-            # Ajusta tamanho da fonte proporcionalmente
             c.setFont("Helvetica-Bold", min(width, height) * 0.08)
             c.translate(width / 2, height / 2)
             c.rotate(rotation)
@@ -224,7 +223,7 @@ def add_page_numbers(
         else:
             label = num_str
             
-        # Posição Y (cabeçalho: topo - 36pt / rodapé: base + 36pt)
+        # Posição Y
         y = height - 36 if "Cabeçalho" in position else 36
         
         # Posição X
@@ -257,6 +256,76 @@ def add_page_numbers(
         os.remove(temp_pdf)
     except Exception:
         pass
+        
+    return output_path
+
+
+def encrypt_pdf(input_path: str, output_path: str, password: str) -> str:
+    """Criptografa um arquivo PDF com uma senha de abertura usando pypdf."""
+    from pypdf import PdfReader, PdfWriter
+    reader = PdfReader(input_path)
+    writer = PdfWriter()
+    
+    for page in reader.pages:
+        writer.add_page(page)
+        
+    writer.encrypt(password)
+    
+    with open(output_path, "wb") as f:
+        writer.write(f)
+        
+    return output_path
+
+
+def parse_page_ranges(ranges_str: str, max_pages: int) -> list[int]:
+    """Converte string '1-3, 5' em lista de indices [0, 1, 2, 4]."""
+    pages = set()
+    parts = ranges_str.replace(" ", "").split(",")
+    for part in parts:
+        if not part:
+            continue
+        if "-" in part:
+            subparts = part.split("-")
+            if len(subparts) == 2:
+                try:
+                    start = int(subparts[0])
+                    end = int(subparts[1])
+                    start = max(1, min(start, max_pages))
+                    end = max(1, min(end, max_pages))
+                    if start <= end:
+                        for p in range(start, end + 1):
+                            pages.add(p - 1)
+                    else:
+                        for p in range(end, start + 1):
+                            pages.add(p - 1)
+                except ValueError:
+                    pass
+        else:
+            try:
+                p = int(part)
+                if 1 <= p <= max_pages:
+                    pages.add(p - 1)
+            except ValueError:
+                pass
+    return sorted(list(pages))
+
+
+def split_pdf(input_path: str, output_path: str, page_ranges_str: str) -> str:
+    """Gera um novo PDF apenas com as páginas especificadas na string de intervalos."""
+    from pypdf import PdfReader, PdfWriter
+    reader = PdfReader(input_path)
+    writer = PdfWriter()
+    max_pages = len(reader.pages)
+    
+    indices = parse_page_ranges(page_ranges_str, max_pages)
+    if not indices:
+        raise Exception("Nenhuma página válida especificada no intervalo.")
+        
+    for idx in indices:
+        writer.add_page(reader.pages[idx])
+        
+    with open(output_path, "wb") as f:
+        writer.write(f)
         
     return output_path
 
@@ -510,8 +579,10 @@ class SecureDocApp(ctk.CTk):
         pdf_items = [
             ("pdfmerge", "🧩  Juntar PDFs"),
             ("pdfcompress", "📉  Comprimir PDF"),
+            ("pdfsplit", "✂️  Dividir PDF"),
             ("pdfwatermark", "🎨  Marca D'água"),
             ("pdfnumber", "🔢  Numerar Páginas"),
+            ("pdfprotect", "🔐  Proteger PDF"),
         ]
         for page_id, label in pdf_items:
             self._create_nav_button(page_id, label)
@@ -583,10 +654,14 @@ class SecureDocApp(ctk.CTk):
                 self._pages[page_id] = self._create_merge_page()
             elif page_id == "pdfcompress":
                 self._pages[page_id] = self._create_compress_page()
+            elif page_id == "pdfsplit":
+                self._pages[page_id] = self._create_split_page()
             elif page_id == "pdfwatermark":
                 self._pages[page_id] = self._create_watermark_page()
             elif page_id == "pdfnumber":
                 self._pages[page_id] = self._create_numbering_page()
+            elif page_id == "pdfprotect":
+                self._pages[page_id] = self._create_protect_page()
             elif page_id == "log":
                 self._pages[page_id] = self._create_log_page()
             elif page_id == "about":
@@ -767,7 +842,6 @@ class SecureDocApp(ctk.CTk):
     def _create_merge_page(self) -> ctk.CTkFrame:
         page, _ = self._create_base_layout("Juntar PDFs", "Mescle múltiplos documentos PDF em um único arquivo", [".pdf"])
 
-        # Drop com reordenação habilitada
         drop = DropZone(page, accepted_extensions=[".pdf"], show_ordering=True, corner_radius=12, border_width=2, border_color=COLORS["accent"])
         drop.grid(row=1, column=0, sticky="ew", padx=30, pady=(10, 10))
 
@@ -853,6 +927,60 @@ class SecureDocApp(ctk.CTk):
 
         pbar, plabel, pbtn = self._add_progress_elements(page, 5, run_action)
         pbtn.configure(text="⚡  Comprimir PDF(s)")
+
+        page._drop_zone = drop
+        page._progress_bar = pbar
+        page._progress_label = plabel
+        page._convert_btn = pbtn
+
+        return page
+
+    # ─────────────── PÁGINA: DIVIDIR PDF ───────────────
+
+    def _create_split_page(self) -> ctk.CTkFrame:
+        page, _ = self._create_base_layout("Dividir PDF", "Extraia ou remova páginas de arquivos PDF localmente", [".pdf"])
+
+        drop = DropZone(page, accepted_extensions=[".pdf"], show_ordering=False, corner_radius=12, border_width=2, border_color=COLORS["accent"])
+        drop.grid(row=1, column=0, sticky="ew", padx=30, pady=(10, 10))
+
+        # Painel de Intervalos
+        panel = ctk.CTkFrame(page, corner_radius=10)
+        panel.grid(row=2, column=0, sticky="ew", padx=30, pady=(0, 10))
+        
+        ctk.CTkLabel(panel, text="Intervalo de Páginas:", font=ctk.CTkFont(size=12, weight="bold")).pack(side="left", padx=(15, 10), pady=10)
+        
+        range_input = ctk.CTkEntry(panel, placeholder_text="Ex: 1-3, 5, 8-10", height=28, width=220)
+        range_input.pack(side="left", padx=(0, 15), pady=10)
+        page._split_ranges = range_input
+        
+        ctk.CTkLabel(
+            panel, text="Use vírgula para páginas soltas e hífen para intervalos.",
+            font=ctk.CTkFont(size=11, slant="italic"), text_color=COLORS["muted_dark"]
+        ).pack(side="left", padx=(0, 15))
+
+        self._add_dest_selection(page, 3)
+
+        action_btn_frame = ctk.CTkFrame(page, fg_color="transparent")
+        action_btn_frame.grid(row=4, column=0, sticky="ew", padx=30, pady=(0, 10))
+
+        ctk.CTkButton(
+            action_btn_frame, text="📁  Selecionar PDF(s)", height=38, corner_radius=10,
+            fg_color=COLORS["accent"], hover_color=COLORS["accent_hover"], font=ctk.CTkFont(size=12, weight="bold"),
+            command=lambda: self._select_files(drop, [".pdf"])
+        ).pack(side="left", padx=(0, 10))
+
+        ctk.CTkButton(
+            action_btn_frame, text="🗑️  Limpar", height=38, width=80, corner_radius=10,
+            fg_color="transparent", border_width=1, border_color=COLORS["muted_dark"],
+            text_color=COLORS["muted_dark"], hover_color=COLORS["error"], font=ctk.CTkFont(size=12),
+            command=drop.clear_files
+        ).pack(side="left")
+
+        def run_action():
+            self._start_conversion("split", drop, pbar, plabel, pbtn, page)
+
+        pbar, plabel, pbtn = self._add_progress_elements(page, 5, run_action)
+        pbtn.configure(text="⚡  Dividir PDF(s)")
 
         page._drop_zone = drop
         page._progress_bar = pbar
@@ -1051,6 +1179,68 @@ class SecureDocApp(ctk.CTk):
 
         return page
 
+    # ─────────────── PÁGINA: PROTEGER PDF ───────────────
+
+    def _create_protect_page(self) -> ctk.CTkFrame:
+        page, _ = self._create_base_layout("Proteger PDF", "Adicione criptografia e senha de leitura aos seus arquivos PDF", [".pdf"])
+
+        drop = DropZone(page, accepted_extensions=[".pdf"], show_ordering=False, corner_radius=12, border_width=2, border_color=COLORS["accent"])
+        drop.grid(row=1, column=0, sticky="ew", padx=30, pady=(10, 10))
+
+        # Painel de Senha
+        panel = ctk.CTkFrame(page, corner_radius=10)
+        panel.grid(row=2, column=0, sticky="ew", padx=30, pady=(0, 10))
+        
+        ctk.CTkLabel(panel, text="Senha de Abertura:", font=ctk.CTkFont(size=12, weight="bold")).pack(side="left", padx=(15, 10), pady=10)
+        
+        pwd_input = ctk.CTkEntry(panel, placeholder_text="Senha para abrir o PDF", height=28, width=220, show="*")
+        pwd_input.pack(side="left", padx=(0, 15), pady=10)
+        page._protect_pwd = pwd_input
+        
+        def toggle_password_visibility():
+            if show_pwd_var.get():
+                pwd_input.configure(show="")
+            else:
+                pwd_input.configure(show="*")
+                
+        show_pwd_var = ctk.BooleanVar(value=False)
+        chk_show = ctk.CTkCheckBox(
+            panel, text="Mostrar Senha", variable=show_pwd_var,
+            command=toggle_password_visibility, font=ctk.CTkFont(size=11)
+        )
+        chk_show.pack(side="left", padx=(0, 15), pady=10)
+
+        self._add_dest_selection(page, 3)
+
+        action_btn_frame = ctk.CTkFrame(page, fg_color="transparent")
+        action_btn_frame.grid(row=4, column=0, sticky="ew", padx=30, pady=(0, 10))
+
+        ctk.CTkButton(
+            action_btn_frame, text="📁  Selecionar PDF(s)", height=38, corner_radius=10,
+            fg_color=COLORS["accent"], hover_color=COLORS["accent_hover"], font=ctk.CTkFont(size=12, weight="bold"),
+            command=lambda: self._select_files(drop, [".pdf"])
+        ).pack(side="left", padx=(0, 10))
+
+        ctk.CTkButton(
+            action_btn_frame, text="🗑️  Limpar", height=38, width=80, corner_radius=10,
+            fg_color="transparent", border_width=1, border_color=COLORS["muted_dark"],
+            text_color=COLORS["muted_dark"], hover_color=COLORS["error"], font=ctk.CTkFont(size=12),
+            command=drop.clear_files
+        ).pack(side="left")
+
+        def run_action():
+            self._start_conversion("protect", drop, pbar, plabel, pbtn, page)
+
+        pbar, plabel, pbtn = self._add_progress_elements(page, 5, run_action)
+        pbtn.configure(text="⚡  Criptografar PDF(s)")
+
+        page._drop_zone = drop
+        page._progress_bar = pbar
+        page._progress_label = plabel
+        page._convert_btn = pbtn
+
+        return page
+
     # ─────────────── SISTEMA DE NAVEGAÇÃO DOS DIRETÓRIOS ───────────────
 
     def _select_files(self, drop_zone: DropZone, extensions: list[str]):
@@ -1207,6 +1397,16 @@ class SecureDocApp(ctk.CTk):
                         output = compress_pdf(file_path, output_file, level)
                         log_type = "Comprimir PDF"
 
+                    # Dividir PDF
+                    elif op_type == "split":
+                        suffix = "_dividido.pdf"
+                        output_file = str(Path(out_dir) / (Path(file_path).stem + suffix))
+                        ranges = page._split_ranges.get()
+                        if not ranges:
+                            raise Exception("Digite os intervalos de pagina (ex: 1-3, 5).")
+                        output = split_pdf(file_path, output_file, ranges)
+                        log_type = "Dividir PDF"
+
                     # Marca D'água
                     elif op_type == "watermark":
                         suffix = "_marca.pdf"
@@ -1241,6 +1441,16 @@ class SecureDocApp(ctk.CTk):
                         output = add_page_numbers(file_path, output_file, pos, fmt, font, style)
                         log_type = "Numerar PDF"
 
+                    # Proteger PDF
+                    elif op_type == "protect":
+                        suffix = "_protegido.pdf"
+                        output_file = str(Path(out_dir) / (Path(file_path).stem + suffix))
+                        pwd = page._protect_pwd.get()
+                        if not pwd:
+                            raise Exception("Digite a senha de abertura desejada.")
+                        output = encrypt_pdf(file_path, output_file, pwd)
+                        log_type = "Proteger PDF"
+
                     success_count += 1
                     self._add_log_entry(log_type, file_name, "✅ Sucesso", Path(output).name)
                     logger.info(f"{log_type} | {file_name} → {Path(output).name} | Sucesso")
@@ -1261,11 +1471,11 @@ class SecureDocApp(ctk.CTk):
             page._cancel_btn.grid_forget()
             convert_btn.grid(row=0, column=0, sticky="ew", padx=0)
             
-            # Restaura label padrão do botão
             titles_map = {
                 "word2pdf": "Converter WORD → PDF", "pdf2word": "Converter PDF → WORD",
                 "merge": "Juntar PDFs", "compress": "Comprimir PDF(s)",
-                "watermark": "Aplicar Marca D'água", "number": "Numerar Páginas"
+                "split": "Dividir PDF(s)", "watermark": "Aplicar Marca D'água",
+                "number": "Numerar Páginas", "protect": "Criptografar PDF(s)"
             }
             convert_btn.configure(state="normal", text=f"⚡  {titles_map.get(op_type, 'Executar')}")
             progress_bar.set(1)
@@ -1449,12 +1659,13 @@ class SecureDocApp(ctk.CTk):
         sep.pack(fill="x", padx=30, pady=12)
 
         features = [
-            ("📝", "WORD → PDF", "Converte docx para pdf"),
-            ("📕", "PDF → WORD", "Converte pdf para docx"),
+            ("📝", "WORD ↔ PDF", "Converte docx ↔ pdf"),
             ("🧩", "Juntar PDFs", "Une vários arquivos PDF"),
             ("📉", "Comprimir PDF", "Reduz o tamanho com PyMuPDF"),
+            ("✂️", "Dividir PDF", "Extrai intervalos de páginas"),
             ("🎨", "Marca D'água", "Adiciona texto/imagem opacos"),
             ("🔢", "Numerar Páginas", "Cabeçalho/rodapé romano ou arábico"),
+            ("🔐", "Proteger PDF", "Criptografa com senha local"),
         ]
 
         features_frame = ctk.CTkFrame(card, fg_color="transparent")
