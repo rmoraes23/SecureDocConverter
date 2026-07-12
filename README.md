@@ -30,15 +30,16 @@ Conversores online de documentos exigem que você **faça upload dos seus arquiv
 
 | Feature | Descrição |
 |---|---|
-| 📝 **WORD → PDF** | Converta documentos `.docx` para `.pdf` |
-| 📕 **PDF → WORD** | Converta documentos `.pdf` para `.docx` |
-| 📂 **Drag & Drop** | Arraste e solte arquivos na janela |
-| 📁 **Arquivo ou Pasta** | Converta arquivos individuais ou pastas inteiras |
-| 📋 **Histórico Completo** | Log detalhado com data, hora, tipo e status |
-| 🔒 **100% Offline** | Seus dados nunca saem do computador |
-| 🎨 **Interface Moderna** | Design premium com tema claro/escuro |
-| ⚡ **Multi-threading** | Interface fluida mesmo durante conversões |
-| 📊 **Barra de Progresso** | Acompanhe o progresso em tempo real |
+| 📝 **WORD ↔ PDF** | Conversão bidirecional offline de arquivos individuais ou pastas |
+| 🧩 **Juntar PDFs** | Combine múltiplos PDFs em um único arquivo com reordenação visual (Subir/Descer) |
+| 📉 **Comprimir PDF** | Redução inteligente do tamanho de PDFs mantendo a legibilidade via PyMuPDF |
+| 🎨 **Marca D'água** | Aplique marcas d'água de **Texto** ou **Imagem** (com controle de opacidade, cor e rotação) |
+| 🔢 **Numerar Páginas** | Paginação no rodapé ou cabeçalho (esquerda, centro ou direita), em algarismos arábicos ou romanos |
+| 📂 **Drag & Drop** | Arraste e solte arquivos diretamente nas zonas de upload |
+| 📋 **Histórico e Logs** | Histórico completo de conversões e processamentos com status em tempo real |
+| 🔒 **100% Offline** | Seus arquivos são processados localmente — privacidade absoluta garantida |
+| 🎨 **Interface Premium** | Design responsivo com suporte completo a tema Claro e Escuro |
+| ⚡ **Multi-threading** | Processamento assíncrono para garantir que a aplicação nunca trave |
 
 ---
 
