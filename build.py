@@ -8,6 +8,13 @@ import sys
 import subprocess
 import shutil
 
+# Configura o console para aceitar UTF-8 no Windows e evitar erros de charmap
+try:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
 def install_pyinstaller():
     print("Verificando se o PyInstaller está instalado...")
     try:
@@ -27,7 +34,7 @@ def clean_previous_builds():
                 shutil.rmtree(d)
                 print(f"Diretório '{d}' removido.")
             except PermissionError as pe:
-                print(f"\n⚠️  Aviso: Não foi possível remover o diretório '{d}' devido a falta de permissão.")
+                print(f"\n[Aviso] Nao foi possivel remover o diretorio '{d}' devido a falta de permissao.")
                 print("   Isso geralmente significa que:")
                 print("   1. O aplicativo 'SecureDocConverter.exe' ou um processo Python ainda está em execução.")
                 print("   2. A pasta está aberta no Windows Explorer ou sendo escaneada pelo antivírus.")
