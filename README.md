@@ -2,6 +2,50 @@
 
 <div align="center">
 
+# 🛡️ Secure Batch Document Converter (Offline)
+
+🇺🇸 [English Version](#english) | 🇧🇷 [Versão em Português](#português)
+
+## 📌 The Business Problem
+The use of free online PDF converters is one of the most common and overlooked **Shadow IT** risks in corporate environments. Employees often upload sensitive contracts, financial reports, and PII-laden documents to unknown third-party servers. This creates severe risks of data exfiltration and non-compliance with global data protection regulations (such as GDPR and LGPD).
+
+## 💡 The Solution
+This project provides a **100% local and offline automation tool** built in Python. It allows users to bulk-convert documents (Word to PDF and vice versa) directly on their machines, ensuring that sensitive corporate data never leaves the internal infrastructure. 
+
+## 🚀 Key Features & Security Benefits
+* **Zero Data Exfiltration:** Operates entirely offline. No APIs, no cloud uploads, and no third-party servers involved.
+* **Privacy by Design:** Ensures strict adherence to Data Loss Prevention (DLP) policies by keeping confidential data contained.
+* **Batch Processing:** Automates the conversion of entire directories, saving hours of manual operational work for Legal, HR, and Finance departments.
+* **Bidirectional:** Seamlessly converts `.docx` to `.pdf` and `.pdf` to `.docx`.
+
+## 💼 GRC & Business Value
+* **Mitigates Shadow IT:** Provides a safe, highly efficient internal alternative to risky web-based tools.
+* **Data Sovereignty:** Maintains complete corporate control over intellectual property and sensitive stakeholder information.
+* **Operational Agility:** Proves that security controls can accelerate business processes rather than slowing them down.
+
+## 🛠️ Built With
+* Python 3.x
+* `pdf2docx`
+* `docx2pdf`
+
+## ⚙️ How to Use
+
+1. Clone this repository to your local machine.
+2. Install the required dependencies:
+```bash
+pip install -r requirements.txt
+```
+3. Place the files you want to convert in the `input` directory.
+4. Run the script:
+```bash
+python converter.py
+```
+5. Retrieve your secure, converted files from the `output` directory.
+
+---
+
+### Versão em Português
+
 **Conversor de documentos 100% offline e seguro.**
 *Seus arquivos nunca saem do seu computador.*
 
